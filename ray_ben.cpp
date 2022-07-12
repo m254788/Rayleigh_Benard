@@ -50,7 +50,7 @@ void multiply(double* result, int* mat1, int row1, int col1, double* mat2, int r
 
 int main(int argc, char* argv[]) {
 
-	int ly = 51;
+	int ly = 11;
 	int aspect_ratio = 2;
 	int lx = ly*aspect_ratio;
 	int nnodes = lx*ly;
@@ -70,16 +70,17 @@ int main(int argc, char* argv[]) {
 	double omegaNS = 1.0/(3*nu + 0.5);
 	double omegaT = 1.0/(3*k + 0.5);
 	
-	int maxT = 10000;
+	int maxT = 10;
 	int Vis_ts = 100;
 	int Vis_ind = 0;
 	
-	double tNS[] = {4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36};
+	double tNS[] = {4./9,1./9,1./9,1./9,1./9,1./36,1./36,1./36,1./36};
 	int cxNS[] = {0,1,0,-1,0,1,-1,-1,1};
 	int cyNS[] = {0,0,1,0,-1,1,1,-1,-1};
 	int oppNS[] = {0,3,4,1,2,7,8,5,6};
 	
-	double tT[] = {1/3,1/6,1/6,1/6,1/6};
+	double tT[] = {1./3,1./6,1./6,1./6,1./6};
+
 	int cxT[] = {0,1,0,-1,0};
 	int cyT[] = {0,0,1,0,-1};
 	int oppT[] = {0,3,4,1,2};
@@ -118,6 +119,7 @@ int main(int argc, char* argv[]) {
 			tIn[s*nnodes+n] = tT[s]*Tcold;
 		}
 	}
+
 	for(int s = 0; s < 5; s++){ //go along bottom nodes, set equal to Thot
 		for(int b = 0; b < lx; b++){ 
 			tIn[s*nnodes+b] = tT[s]*Thot;
@@ -127,6 +129,8 @@ int main(int argc, char* argv[]) {
 	for(int s = 0; s < 5; s++){ //create asymmetry
 		tIn[s*nnodes+int(1.5*lx)] = tT[s]*(1.1*Thot);
 	}
+	
+
 	
 	//create stream target matrices
 	
@@ -216,9 +220,10 @@ int main(int argc, char* argv[]) {
 			tIn[4*nnodes+top_nodes[n]] = Tcold-tIn[0*nnodes+top_nodes[n]]-tIn[1*nnodes+top_nodes[n]]-tIn[2*nnodes+top_nodes[n]]-tIn[3*nnodes+top_nodes[n]]; // top nodes
 		}
 		
-		std::cout<<cycle<<"\n";
+		
 	
 	}
+	
 	delete[] top_nodes;
 	delete[] bottom_nodes;
 	delete[] fIn;
