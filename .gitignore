@@ -1,3 +1,5 @@
 *.xmf
 *.hf
 *.avi
+__pycache__
+.ipynb_checkpoints
