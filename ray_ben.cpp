@@ -36,19 +36,7 @@ void columnSum(double* sum, double* mat, int rows, int cols){
 		sum[j] = colsum;
 	}
 }
-/*
-void multiply(double* result, int* mat1, int row1, int col1, double* mat2, int row2, int col2){
-	for(int i = 0; i < row1; i++) {
-		for(int j = 0; j < col2; j++){
-			int sum = 0;
-			for (int k = 0; k < col1; k++){
-				sum = sum + mat1[i*col1 + k]*mat2[k*col2 + j];
-			}
-			result[i*col2 + j] = sum;
-		}
-	}
-}
-*/
+
 void write_vector_to_file(double* vector, int dim, int evolution) {
 	std::ofstream myfile;
 	myfile.open("evolution"+std::to_string(evolution)+".txt");
@@ -123,7 +111,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	for(int s = 0; s < 5; s++){ //create asymmetry
+	for(int s = 0; s < 5; s++){ //create asymmetry NOTE: it's cool to add multiple asymmetries
 		tIn[s*nnodes+int(1.5*lx)] = tT[s]*(1.1*Thot);
 	}
 	
