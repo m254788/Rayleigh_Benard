@@ -24,6 +24,7 @@ void printMat(double* mat, int rows, int cols){
                 }
                 std::cout<<"\n";
         }
+	std::cout<<"\n";
 }
 
 void columnSum(double* sum, double* mat, int rows, int cols){
@@ -35,7 +36,7 @@ void columnSum(double* sum, double* mat, int rows, int cols){
 		sum[j] = colsum;
 	}
 }
-
+/*
 void multiply(double* result, int* mat1, int row1, int col1, double* mat2, int row2, int col2){
 	for(int i = 0; i < row1; i++) {
 		for(int j = 0; j < col2; j++){
@@ -47,10 +48,18 @@ void multiply(double* result, int* mat1, int row1, int col1, double* mat2, int r
 		}
 	}
 }
+*/
+void write_vector_to_file(double* vector, int dim, int evolution) {
+	std::ofstream myfile;
+	myfile.open("evolution"+std::to_string(evolution)+".txt");
+	for(int i = 0; i < dim; i++){
+		myfile << vector[i] << "\n";
+	}
+}
 
 int main(int argc, char* argv[]) {
 
-	int ly = 11;
+	int ly = 51;
 	int aspect_ratio = 2;
 	int lx = ly*aspect_ratio;
 	int nnodes = lx*ly;
@@ -70,7 +79,7 @@ int main(int argc, char* argv[]) {
 	double omegaNS = 1.0/(3*nu + 0.5);
 	double omegaT = 1.0/(3*k + 0.5);
 	
-	int maxT = 10;
+	int maxT = 10000;
 	int Vis_ts = 100;
 	int Vis_ind = 0;
 	
@@ -84,19 +93,7 @@ int main(int argc, char* argv[]) {
 	int cxT[] = {0,1,0,-1,0};
 	int cyT[] = {0,0,1,0,-1};
 	int oppT[] = {0,3,4,1,2};
-	
-	/*initialize grid coordinates
-	int* xcoords = new int [nnodes];
-	int* ycoords = new int [nnodes];
-	
-	for(int r = 0; r < ly; r++){
-		for(int c = 0; c < lx; c++){
-			xcoords[r*lx+c] = c;
-			ycoords[r*lx+c] = r;
-		}
-		
-	}
-	*/
+
 	
 	//identify top and bottom nodes
 	int* top_nodes = new int [lx];
@@ -164,20 +161,39 @@ int main(int argc, char* argv[]) {
 	double* force = new double [9*nnodes];
 	double* fOut = new double [9*nnodes];
 	double cu;
+	double sumx;
+	double sumy;
 	double* tEq = new double [5*nnodes];
 	double* tOut = new double [5*nnodes];
+	double* allData = new double [nnodes*3];
 	//main loop
 	for(int cycle = 0; cycle < maxT; cycle++){
 		
 		columnSum(rho, fIn, 9, nnodes);
 		columnSum(T, tIn, 5, nnodes);
-		multiply(ux, cxNS, 1, 9, fIn, 9, nnodes);
-		multiply(uy, cyNS, 1, 9, fIn, 9, nnodes);
+		
+	
+		
+		//multiply cxNS and fIn to get ux
+		for(int n = 0; n < nnodes; n++){
+			sumx = 0;
+			sumy = 0;
+			for(int i = 0; i < 9; i++){
+				sumx += cxNS[i]*fIn[i*nnodes+n];
+				sumy += cyNS[i]*fIn[i*nnodes+n];
+			}
+			ux[n] = sumx;
+			uy[n] = sumy;
+		}
+		
+
 		for(int i = 0; i < nnodes; i++){
 			ux[i] = ux[i]/rho[i];
 			uy[i] = uy[i]/rho[i];
 		}
 		
+				
+	
 		//collision step fluid
 		
 		for(int spd = 0; spd < 9; spd++){
@@ -188,6 +204,10 @@ int main(int argc, char* argv[]) {
 				fOut[spd*nnodes+n] = fIn[spd*nnodes+n] - omegaNS*(fIn[spd*nnodes+n]-fEq[spd*nnodes+n])+force[spd*nnodes+n];
 			}
 		}
+		
+		
+		
+		
 		//collision step temperature
 		
 		for(int i = 0; i < 5; i++){
@@ -204,16 +224,20 @@ int main(int argc, char* argv[]) {
 				fOut[i*nnodes + n] = fIn[oppNS[i]*nnodes + n]; //assuming bottom nodes are nodes 0,1,2,...,lx-1
 			}
 		}
+		
 		//streaming
 		for(int i = 0; i < 9; i++){
 			for(int n = 0; n < nnodes; n++){
 				fIn[i*nnodes+stmNS[i*nnodes+n]] = fOut[i*nnodes+n];//stream fluid
-				if (i < 5){
-					tIn[i*nnodes+stmT[i*nnodes+n]] = tOut[i*nnodes+n];//stream temperature
-				}
 			}
 		}
-
+		for (int i = 0; i < 5; i++){
+			for(int n = 0; n < nnodes; n++){
+				tIn[i*nnodes+(stmNS[i*nnodes+n])] = tOut[i*nnodes+n];//stream temp
+			}
+		}
+		
+		
 		//microscopic boundary conditions for temperature
 		for(int n = 0; n < lx; n++){
 			tIn[2*nnodes+n] = Thot-tIn[0*nnodes+n]-tIn[1*nnodes+n]-tIn[3*nnodes+n]-tIn[4*nnodes+n];  // bottom nodes
@@ -221,9 +245,24 @@ int main(int argc, char* argv[]) {
 		}
 		
 		
+		if (cycle%Vis_ts==0){
+			for(int i = 0; i < nnodes; i++){
+				allData[i] = T[i];
+				allData[nnodes + i] = ux[i];
+				allData[2*nnodes + i] = uy[i];
+			}
+			write_vector_to_file(allData, 3*nnodes, Vis_ind);
+			Vis_ind++;
+		}
 	
 	}
 	
+	//write params file. Vis_ind is total num viz
+	std::ofstream paramfile;
+	paramfile.open("params.txt");
+	paramfile << lx << "\n" << ly <<"\n" << Vis_ind << "\n" << delta_x;
+
+		
 	delete[] top_nodes;
 	delete[] bottom_nodes;
 	delete[] fIn;
@@ -239,6 +278,7 @@ int main(int argc, char* argv[]) {
 	delete[] fOut;
 	delete[] tEq;
 	delete[] tOut;
+	delete[] allData;
 	return 0;
 }
 
