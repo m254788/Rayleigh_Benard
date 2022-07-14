@@ -1,5 +1,5 @@
 *.xmf
-*.hf
+*.h5
 *.avi
 __pycache__
 .ipynb_checkpoints
