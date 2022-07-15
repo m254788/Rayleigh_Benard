@@ -105,13 +105,13 @@ __global__ void timestep(float* fIn, float* fOut,float* fEq,float* force, float*
 
 int main(int argc, char* argv[]) {
 	//give to device as arguments in kernel
-	int ly = 5;//kernel arg
+	int ly = 51;//kernel arg
 	int aspect_ratio = 2;
 	int lx = ly*aspect_ratio; //kernel arg
 	int nnodes = lx*ly; //kernel arg
 	float delta_x = 1.0/(ly-2);
 	float Pr = 1.0;
-	float Ra = 1000000;
+	float Ra = 100000;
 	float gr = 0.001;
 	float Thot = 1.0; //kernel arg
 	int Tcold = 0; //kernel arg
@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
 	float omegaT = 1.0/(3*k + 0.5);//kernel arg
 	
 	//host variables
-	int maxT = 1000;
+	int maxT = 10000;
 	//int Vis_ts = 100;
 	//int Vis_ind = 0;
 	
