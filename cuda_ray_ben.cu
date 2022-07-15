@@ -43,7 +43,7 @@ void write_vector_to_file(double* vector, int dim, int evolution) {
 	}
 }
 
-__global__ void timestep(double* fIn, double* fOut,double* fEq,double* force, double* rho, double* T, double* ux, double* uy, double* tIn, double* tOut, double *tEq, int lx, int ly, int* cxNS, int* cyNS,int* cxT, int* cyT, double* tNS,double* tT, int Thot, int Tcold, double omegaNS, double omegaT, int* oppNS, int* stmNS, int* stmT){
+__global__ void timestep(double* fIn, double* fOut,double* fEq,double* force, double* rho, double* T, double* ux, double* uy, double* tIn, double* tOut, double *tEq, int lx, int ly, int* cxNS, int* cyNS,int* cxT, int* cyT, double* tNS,double* tT, double Thot, int Tcold, double omegaNS, double omegaT, int* oppNS, int* stmNS, int* stmT){
 	int nid = threadIdx.x + blockIdx.x*blockDim.x;
 	int nnodes = lx*ly;
 	if (nid < nnodes){
@@ -105,7 +105,7 @@ __global__ void timestep(double* fIn, double* fOut,double* fEq,double* force, do
 
 int main(int argc, char* argv[]) {
 	//give to device as arguments in kernel
-	int ly = 3;//kernel arg
+	int ly = 5;//kernel arg
 	int aspect_ratio = 2;
 	int lx = ly*aspect_ratio; //kernel arg
 	int nnodes = lx*ly; //kernel arg
@@ -122,11 +122,11 @@ int main(int argc, char* argv[]) {
 	double omegaNS = 1.0/(3*nu + 0.5);//kernel arg
 	double omegaT = 1.0/(3*k + 0.5);//kernel arg
 	
-	/*host variables
-	int maxT = 10000;
-	int Vis_ts = 100;
-	int Vis_ind = 0;
-	*/
+	//host variables
+	int maxT = 1000;
+	//int Vis_ts = 100;
+	//int Vis_ind = 0;
+	
 	//device needs to know these values
 	double tNS[] = {4./9,1./9,1./9,1./9,1./9,1./36,1./36,1./36,1./36};//kernel arg
 	int cxNS[] = {0,1,0,-1,0,1,-1,-1,1};//kernel arg
@@ -242,6 +242,15 @@ int main(int argc, char* argv[]) {
 	double* T = new double[nnodes];
 	double* ux = new double[nnodes];
 	double* uy = new double[nnodes];
+	//here down not actually needed just for debugging purposes
+	double* rho = new double[nnodes];
+	double* fEq = new double[9*nnodes];
+	double* fOut = new double[9*nnodes];
+	double* force = new double[9*nnodes];
+	double* tEq = new double[5*nnodes];
+	double* tOut = new double[5*nnodes];
+	//here up ''
+
 	double *rho_d, *T_d, *ux_d, *uy_d, *fEven_d, *fOdd_d, *fEq_d, *force_d, *tEven_d, *tOdd_d, *tEq_d;
 	
 	cudaMalloc(&rho_d, nnodes*sizeof(double));
@@ -259,10 +268,29 @@ int main(int argc, char* argv[]) {
 	
 	cudaMemcpy(fEven_d, fEven, 9*nnodes*sizeof(double), cudaMemcpyHostToDevice);
 	cudaMemcpy(tEven_d, tEven, 5*nnodes*sizeof(double), cudaMemcpyHostToDevice);
-	double* test = new double[9*nnodes];	
-	timestep<<<((nnodes+127)/128),128>>>(fEven_d,fOdd_d,fEq_d,force_d, rho_d, T_d, ux_d, uy_d, tEven_d, tOdd_d, tEq_d, lx, ly, cxNS_d, cyNS_d,cxT_d,cyT_d, tNS_d,tT_d, Thot, Tcold, omegaNS, omegaT, oppNS_d, stmNS_d,stmT_d);
-	cudaMemcpy(test,fEven_d,9*nnodes*sizeof(double),cudaMemcpyDeviceToHost);
-	printMat(test,9,nnodes);
+	
+	for(int cycle = 0; cycle < maxT; cycle++){
+		timestep<<<((nnodes+127)/128),128>>>(fEven_d,fOdd_d,fEq_d,force_d, rho_d, T_d, ux_d, uy_d, tEven_d, tOdd_d, tEq_d, lx, ly, cxNS_d, cyNS_d,cxT_d,cyT_d, tNS_d,tT_d, Thot, Tcold, omegaNS, omegaT, oppNS_d, stmNS_d,stmT_d);
+
+	}
+	//just for debugging
+	cudaMemcpy(T,T_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(ux,ux_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(uy,uy_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+	/*
+	cudaMemcpy(rho,rho_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(fEq,fEq_d,9*nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(fOut,fOdd_d,9*nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(force,force_d,9*nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(tEq,tEq_d,5*nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(tOut,tOdd_d,5*nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+	*/
+	
+	printMat(T,1,nnodes);
+	printMat(ux,1,nnodes);
+	printMat(uy,1,nnodes);
+
+
 
 	cudaFree(rho_d);
 	cudaFree(T_d);
@@ -283,5 +311,11 @@ int main(int argc, char* argv[]) {
 	delete[] T;
 	delete[] ux;
 	delete[] uy;
-	delete[] test;
+	delete[] rho;
+	delete[] fEq;
+	delete[] fOut;
+	delete[] force;
+	delete[] tEq;
+	delete[] tOut;
+
 }
