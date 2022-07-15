@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
 	int nnodes = lx*ly;
 	double delta_x = 1.0/(ly-2);
 	double Pr = 1.0;
-	double Ra = 1000000;
+	double Ra = 100000;
 	double gr = 0.001;
 	double buoyancy [] = {0, gr};
 	
