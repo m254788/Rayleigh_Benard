@@ -259,10 +259,10 @@ int main(int argc, char* argv[]) {
 	
 	cudaMemcpy(fEven_d, fEven, 9*nnodes*sizeof(double), cudaMemcpyHostToDevice);
 	cudaMemcpy(tEven_d, tEven, 5*nnodes*sizeof(double), cudaMemcpyHostToDevice);
-	double* fOdd = new double[nnodes];	
+	double* test = new double[9*nnodes];	
 	timestep<<<((nnodes+127)/128),128>>>(fEven_d,fOdd_d,fEq_d,force_d, rho_d, T_d, ux_d, uy_d, tEven_d, tOdd_d, tEq_d, lx, ly, cxNS_d, cyNS_d,cxT_d,cyT_d, tNS_d,tT_d, Thot, Tcold, omegaNS, omegaT, oppNS_d, stmNS_d,stmT_d);
-	cudaMemcpy(fOdd,fOdd_d,9*nnodes*sizeof(double),cudaMemcpyDeviceToHost);
-	printMat(fOdd,9,nnodes);
+	cudaMemcpy(test,fEven_d,9*nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+	printMat(test,9,nnodes);
 
 	cudaFree(rho_d);
 	cudaFree(T_d);
@@ -283,5 +283,5 @@ int main(int argc, char* argv[]) {
 	delete[] T;
 	delete[] ux;
 	delete[] uy;
-	delete[] fOdd;
+	delete[] test;
 }
