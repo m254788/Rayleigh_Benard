@@ -47,7 +47,7 @@ void write_vector_to_file(double* vector, int dim, int evolution) {
 
 int main(int argc, char* argv[]) {
 
-	int ly = 51;
+	int ly = 3;
 	int aspect_ratio = 2;
 	int lx = ly*aspect_ratio;
 	int nnodes = lx*ly;
