@@ -14,17 +14,7 @@ void circshift(int* out, int* in, int numrows, int numcols, int rowshift, int co
 		}	
 	}
 }
-/*
-__device__ void columnSum(double* sum, double* mat, int rows, int cols){
-	for(int j = 0; j < cols; j++){
-		double colsum = 0;
-		for(int i = 0; i < rows; i++){
-			colsum += mat[i*cols+j];
-		}
-		sum[j] = colsum;
-	}
-}
-*/
+
 
 void printMat(double* mat, int rows, int cols){
         for(int i = 0; i < rows; i++){
@@ -105,20 +95,24 @@ __global__ void timestep(double* fIn, double* fOut,double* fTemp, double* fEq,do
 		for(int i = 0; i < 5; i++){
 			tOut[i*nnodes+(stmNS[i*nnodes+nid])] = tTemp[i*nnodes+nid];
 		}
-
-		//micro boundary temp
-		if(top_node){
-			tOut[4*nnodes+nid] = Tcold-tOut[0*nnodes+nid]-tOut[1*nnodes+nid]-tOut[2*nnodes+nid]-tOut[3*nnodes+nid];
-		}
-		if(bottom_node){
-			tOut[2*nnodes+nid] = Thot-tOut[0*nnodes+nid]-tOut[1*nnodes+nid]-tOut[3*nnodes+nid]-tOut[4*nnodes+nid];
-		}
 	
 	}
 	
 
 }
 
+__global__ void micro_boundary_temp(double* tOut,int lx,int nnodes, double Thot, int Tcold){
+	int nid = threadIdx.x+blockIdx.x*blockDim.x;
+	if (nid < nnodes){
+		if (nid < lx) { //bottom node
+			tOut[2*nnodes+nid] = Thot-tOut[nid]-tOut[nnodes+nid]-tOut[3*nnodes+nid]-tOut[4*nnodes+nid];		
+		}
+
+		if(nid >= (nnodes-lx)){ //topnode
+			tOut[4*nnodes+nid] = Tcold-tOut[0*nnodes+nid]-tOut[1*nnodes+nid]-tOut[2*nnodes+nid]-tOut[3*nnodes+nid];	
+		}
+	}
+}
 
 int main(int argc, char* argv[]) {
 	//give to device as arguments in kernel
@@ -182,20 +176,7 @@ int main(int argc, char* argv[]) {
 	
 	
 	
-	/*identify top and bottom nodes
-	int* top_nodes = new int [lx];
-	int* bottom_nodes = new int [lx];
-	for(int i = 0; i < lx; i++){
-		bottom_nodes[i] = i;
-		top_nodes[i] = nnodes-lx+i;
-	}
-	
-	int *top_nodes_d, *bottom_nodes_d;
-	cudaMalloc((void**)&top_nodes_d,lx*sizeof(int));
-	cudaMalloc((void**)&bottom_nodes_d,lx*sizeof(int));
-	cudaMemcpy(top_nodes_d,top_nodes,lx*sizeof(int),cudaMemcpyHostToDevice);
-	cudaMemcpy(bottom_nodes_d,bottom_nodes,lx*sizeof(int),cudaMemcpyHostToDevice);
-	*/
+
 
 	//initialize stuff
 	double* fEven = new double [9*nnodes]; //initialize fIn
@@ -286,9 +267,11 @@ int main(int argc, char* argv[]) {
 	for(int cycle = 0; cycle < maxT; cycle++){
 		if(cycle%2==0){
 			timestep<<<GRIDS,BLOCKS>>>(fEven_d,fOdd_d,fTemp_d, fEq_d,force_d, rho_d, T_d, ux_d, uy_d, tEven_d, tOdd_d, tTemp_d, tEq_d, lx, ly, cxNS_d, cyNS_d,cxT_d,cyT_d, tNS_d,tT_d, Thot, Tcold, omegaNS, omegaT, oppNS_d, stmNS_d,stmT_d);
+			micro_boundary_temp<<<GRIDS,BLOCKS>>>(tOdd_d,lx,nnodes,Thot,Tcold);
 		}
 		else{
 			timestep<<<GRIDS,BLOCKS>>>(fOdd_d,fEven_d,fTemp_d, fEq_d,force_d, rho_d, T_d, ux_d, uy_d, tOdd_d, tEven_d, tTemp_d, tEq_d, lx, ly, cxNS_d, cyNS_d,cxT_d,cyT_d, tNS_d,tT_d, Thot, Tcold, omegaNS, omegaT, oppNS_d, stmNS_d,stmT_d);
+			micro_boundary_temp<<<GRIDS,BLOCKS>>>(tEven_d,lx,nnodes,Thot,Tcold);
 
 		}
 
