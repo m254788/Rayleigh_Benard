@@ -116,7 +116,7 @@ __global__ void micro_boundary_temp(double* tOut,int lx,int nnodes, double Thot,
 
 int main(int argc, char* argv[]) {
 	//give to device as arguments in kernel
-	int ly = 51;//kernel arg
+	int ly = 1000;//kernel arg
 	int aspect_ratio = 2;
 	int lx = ly*aspect_ratio; //kernel arg
 	int nnodes = lx*ly; //kernel arg
@@ -134,8 +134,8 @@ int main(int argc, char* argv[]) {
 	double omegaT = 1.0/(3*k + 0.5);//kernel arg
 	
 	//host variables
-	int maxT = 10000;
-	int Vis_ts = 100;
+	int maxT = 20000;
+	int Vis_ts = 2000;
 	int Vis_ind = 0;
 	
 	//device needs to know these values
