@@ -17,15 +17,6 @@ void circshift(int* out, int* in, int numrows, int numcols, int rowshift, int co
 }
 
 
-void printMat(double* mat, int rows, int cols){
-        for(int i = 0; i < rows; i++){
-                for(int j = 0; j < cols; j++){
-                        std::cout << mat[i*cols+j]<<" ";
-                }
-                std::cout<<"\n";
-        }
-	std::cout<<"\n";
-}
 void write_vector_to_file(double* vector, int dim, int evolution) {
 	std::ofstream myfile("evolution"+std::to_string(evolution)+".bin",std::ios::binary);
 	for(int i = 0; i < dim; i++){
@@ -66,22 +57,6 @@ __global__ void timestep(double* fIn, double* fOut,double* fTemp, double* fEq,do
 		}
 
 		//micro boundary fluid
-		/*
-		if (bottom_node || top_node){
-			double temp = fIn[1*nnodes+nid];
-			fIn[1*nnodes+nid] = fIn[3*nnodes+nid];
-			fIn[3*nnodes+nid] = temp;
-			temp = fIn[2*nnodes+nid];
-			fIn[2*nnodes+nid] = fIn[4*nnodes+nid];
-			fIn[4*nnodes+nid] = temp;
-			temp = fIn[5*nnodes+nid];
-			fIn[5*nnodes+nid] = fIn[7*nnodes+nid];
-			fIn[7*nnodes+nid] = temp;
-			temp = fIn[6*nnodes+nid];
-			fIn[6*nnodes+nid] = fIn[8*nnodes+nid];
-			fIn[8*nnodes+nid] = temp;
-		}
-		*/
 
 		if (bottom_node || top_node){
 			for(int i = 0; i < 9; i++){
@@ -126,7 +101,6 @@ int main(int argc, char* argv[]) {
 	double gr = 0.001;
 	double Thot = 1.0; //kernel arg
 	int Tcold = 0; //kernel arg
-	//double T0 = (Thot+Tcold)/2;
 	double delta_t = sqrt(gr*delta_x);
 	double nu = (sqrt(Pr/Ra)*delta_t)/(delta_x*delta_x);
 	double k = sqrt(1.0/(Pr*Ra))*delta_t/(delta_x*delta_x);
