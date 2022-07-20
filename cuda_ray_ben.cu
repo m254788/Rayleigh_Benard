@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
+#include <chrono>
 
 void circshift(int* out, int* in, int numrows, int numcols, int rowshift, int colshift) {
 	for (int i = 0; i < numrows; i++){
@@ -115,13 +116,13 @@ __global__ void micro_boundary_temp(double* tOut,int lx,int nnodes, double Thot,
 
 int main(int argc, char* argv[]) {
 	//give to device as arguments in kernel
-	int ly = 1000;//kernel arg
+	int ly = 100;//kernel arg
 	int aspect_ratio = 2;
 	int lx = ly*aspect_ratio; //kernel arg
 	int nnodes = lx*ly; //kernel arg
 	double delta_x = 1.0/(ly-2);
 	double Pr = 1.0;
-	double Ra = 100000;
+	double Ra = 1000000;
 	double gr = 0.001;
 	double Thot = 1.0; //kernel arg
 	int Tcold = 0; //kernel arg
@@ -133,10 +134,10 @@ int main(int argc, char* argv[]) {
 	double omegaT = 1.0/(3*k + 0.5);//kernel arg
 	
 	//host variables
-	int maxT = 60000;
-	int Vis_ts = 500;
+	int maxT = 15000;
+	int Vis_ts = 15;
 	int Vis_ind = 0;
-	int warmup_timesteps = 20000;
+	int warmup_timesteps = 0;
 	//device needs to know these values
 	double tNS[] = {4./9,1./9,1./9,1./9,1./9,1./36,1./36,1./36,1./36};//kernel arg
 	int cxNS[] = {0,1,0,-1,0,1,-1,-1,1};//kernel arg
@@ -263,6 +264,7 @@ int main(int argc, char* argv[]) {
 	
 	dim3 BLOCKS(128,1,1);
 	dim3 GRIDS((nnodes+127)/128);
+	//std::chrono::steady_clock::time_point _start(std::chrono::steady_clock::now());
 	for(int cycle = 0; cycle < maxT; cycle++){
 		if(cycle%2==0){
 			timestep<<<GRIDS,BLOCKS>>>(fEven_d,fOdd_d,fTemp_d, fEq_d,force_d, rho_d, T_d, ux_d, uy_d, tEven_d, tOdd_d, tTemp_d, tEq_d, lx, ly, cxNS_d, cyNS_d,cxT_d,cyT_d, tNS_d,tT_d, Thot, Tcold, omegaNS, omegaT, oppNS_d, stmNS_d,stmT_d);
@@ -273,10 +275,10 @@ int main(int argc, char* argv[]) {
 			micro_boundary_temp<<<GRIDS,BLOCKS>>>(tEven_d,lx,nnodes,Thot,Tcold);
 
 		}
-
+		
 		if (cycle%Vis_ts==0){
 			std::cout<<"Executing timetep "<<cycle<<".\n";
-			if(cycle>warmup_timesteps){
+			if(cycle>=warmup_timesteps){
 				cudaMemcpy(T,T_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
 				cudaMemcpy(ux,ux_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
 				cudaMemcpy(uy,uy_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
@@ -289,13 +291,20 @@ int main(int argc, char* argv[]) {
 				Vis_ind++;
 			}
 		}
+		
+	
+	
 	
 	}
-
+	//std::chrono::steady_clock::time_point _end(std::chrono::steady_clock::now());
+	//double time = std::chrono::duration_cast<std::chrono::duration<double>>(_end - _start).count();
+	//int lattice_point_updates = nnodes*maxT;
+	//std::cout << "Lattice point updates per second = " << lattice_point_updates/time << "\n";
+	
 	std::ofstream paramfile;
 	paramfile.open("params.txt");
 	paramfile << lx << "\n" << ly << "\n" << Vis_ind << "\n" << delta_x;
-
+	
 	cudaFree(rho_d);
 	cudaFree(T_d);
 	cudaFree(ux_d);

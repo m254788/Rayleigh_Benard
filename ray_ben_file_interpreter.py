@@ -16,6 +16,7 @@ dims = (1,int(ly),int(lx))
 uz = np.zeros(nnodes)
 
 for Vis_ind in range(total_vis):
+	print("Reading file " + str(Vis_ind) + " of " + str(total_vis) + ".")
 	data = np.fromfile("evolution"+str(Vis_ind)+".bin",dtype=np.float64)
 	T = data[0:nnodes]
 	ux = data[nnodes:2*nnodes]
