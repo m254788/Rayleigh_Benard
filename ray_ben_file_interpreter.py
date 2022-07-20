@@ -16,7 +16,7 @@ dims = (1,int(ly),int(lx))
 uz = np.zeros(nnodes)
 
 for Vis_ind in range(total_vis):
-	data = np.loadtxt("evolution"+str(Vis_ind)+".txt",dtype=np.float64)
+	data = np.fromfile("evolution"+str(Vis_ind)+".bin",dtype=np.float64)
 	T = data[0:nnodes]
 	ux = data[nnodes:2*nnodes]
 	uy = data[2*nnodes:3*nnodes]

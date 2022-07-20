@@ -5,3 +5,7 @@ __pycache__
 .ipynb_checkpoints
 circ*
 *.txt
+*.bin
+ray_ben
+cuda_ray_ben
+cuda_copy

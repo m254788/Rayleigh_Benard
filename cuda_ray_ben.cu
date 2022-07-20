@@ -26,10 +26,9 @@ void printMat(double* mat, int rows, int cols){
 	std::cout<<"\n";
 }
 void write_vector_to_file(double* vector, int dim, int evolution) {
-	std::ofstream myfile;
-	myfile.open("evolution"+std::to_string(evolution)+".txt");
+	std::ofstream myfile("evolution"+std::to_string(evolution)+".bin",std::ios::binary);
 	for(int i = 0; i < dim; i++){
-		myfile << vector[i] << "\n";
+		myfile.write((char*)&vector[i],sizeof(double));
 	}
 }
 
@@ -134,10 +133,10 @@ int main(int argc, char* argv[]) {
 	double omegaT = 1.0/(3*k + 0.5);//kernel arg
 	
 	//host variables
-	int maxT = 20000;
-	int Vis_ts = 2000;
+	int maxT = 60000;
+	int Vis_ts = 500;
 	int Vis_ind = 0;
-	
+	int warmup_timesteps = 20000;
 	//device needs to know these values
 	double tNS[] = {4./9,1./9,1./9,1./9,1./9,1./36,1./36,1./36,1./36};//kernel arg
 	int cxNS[] = {0,1,0,-1,0,1,-1,-1,1};//kernel arg
@@ -276,16 +275,19 @@ int main(int argc, char* argv[]) {
 		}
 
 		if (cycle%Vis_ts==0){
-			cudaMemcpy(T,T_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
-			cudaMemcpy(ux,ux_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
-			cudaMemcpy(uy,uy_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
-			for(int i = 0; i < nnodes; i++){
-				allData[i] = T[i];
-				allData[nnodes+i] = ux[i];
-				allData[2*nnodes+i] = uy[i];
+			std::cout<<"Executing timetep "<<cycle<<".\n";
+			if(cycle>warmup_timesteps){
+				cudaMemcpy(T,T_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+				cudaMemcpy(ux,ux_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+				cudaMemcpy(uy,uy_d,nnodes*sizeof(double),cudaMemcpyDeviceToHost);
+				for(int i = 0; i < nnodes; i++){
+					allData[i] = T[i];
+					allData[nnodes+i] = ux[i];
+					allData[2*nnodes+i] = uy[i];
+				}
+				write_vector_to_file(allData, 3*nnodes, Vis_ind);
+				Vis_ind++;
 			}
-			write_vector_to_file(allData, 3*nnodes, Vis_ind);
-			Vis_ind++;
 		}
 	
 	}

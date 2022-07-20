@@ -11,8 +11,10 @@ check_name = sys.argv[2]
 # Tcold = 0
 # maxT = 10000
 
+#GOLDSTANDARD is a txt file
 GOLD_STANDARD = np.loadtxt(gs_name,dtype=np.float64)
-check_board = np.loadtxt(check_name,dtype=np.float64)
+#checkboard is a binary file
+check_board = np.fromfile(check_name,dtype=np.float64)
 
 
 dif = check_board-GOLD_STANDARD
